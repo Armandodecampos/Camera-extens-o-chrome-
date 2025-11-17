@@ -2,12 +2,14 @@
   "manifest_version": 3,
   "name": "Camera Extension",
   "version": "1.0",
-  "description": "A simple camera extension that opens in a popup.",
+  "description": "A simple camera extension that opens in a new tab.",
   "action": {
-    "default_popup": "index.htm",
     "default_icon": "icon.png"
   },
   "icons": {
     "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }
