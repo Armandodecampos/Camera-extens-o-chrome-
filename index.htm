@@ -152,30 +152,6 @@
             z-index: 2000;
             pointer-events: none;
         }
-
-        #timerButton {
-            position: fixed;
-            top: 10px;
-            margin: auto;
-            left: 0px;
-            right: 0px;
-            background: #222;
-            color: #fff;
-            z-index: 3;
-        }
-
-        #timerText {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 4em;
-            color: white;
-            z-index: 4;
-            display: none;
-            text-shadow: 2px 2px 4px black;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -184,26 +160,17 @@
 </div>
 
 <div class="camera-container" id="cameraContainer">
-    <button id="timerButton" class="btncamera" style="position: fixed; top: 10px; right: 10px; background: #222; color: #fff;">
-        <i id="timerIcon" class="fas fa-clock"></i> <span id="timerText">10s</span>
-    </button>
     <video id="video" autoplay></video>
     <canvas id="canvas" width="300" height="400"></canvas>
     <div class="btn-container">
         <button class="btncamera" style="background:#222;color:#fff;" id="newPhotoButton" onclick="newPhoto()" style="display: none;">
             <i class="fas fa-trash-alt"></i>
         </button>
-        <button class="btncamera" style="background:#222;color:#fff;" id="cameraSwitchButton" onclick="debouncedSwitchCamera()">
-            <i class="fas fa-sync-alt"></i>
-        </button>
         <button class="btncamera" style="background:#fff;color:#000;width:80px;height:80px;font-size:25px;bottom:100px;" id="captureButton" onclick="takePhoto()">
             <i class="fas fa-camera"></i>
         </button>
         <button class="btncamera" style="background:#fff;color:#000;width:80px;height:80px;font-size:25px;bottom:100px;display: none;" id="downloadButton" onclick="downloadPhoto();">
             <i class="fas fa-download"></i>
-        </button>
-        <button class="btncamera" style="background:#222;color:#fff;" id="filterButton" onclick="toggleFilter()">
-            <i class="fas fa-adjust"></i>
         </button>
     </div>
 </div>
@@ -220,41 +187,7 @@
     let canvas = document.getElementById('canvas');
     let context = canvas.getContext('2d');
     let stream = null;
-    let facingMode = 'environment';
     let cameraActive = false;
-
-    document.getElementById('timerButton').addEventListener('click', function () {
-        let timerText = document.getElementById('timerText');
-        let timerIcon = document.getElementById('timerIcon');
-
-        if (timerActive) {
-            clearInterval(timerInterval);
-            timerActive = false;
-            timerIcon.className = 'fas fa-clock';
-            timerText.textContent = "10s";
-            timerText.style.display = 'none';
-        } else {
-            let timer = 10;
-            timerActive = true;
-            timerIcon.className = 'fas fa-times';
-            timerText.textContent = `${timer}`;
-            timerText.style.display = 'block';
-
-            timerInterval = setInterval(() => {
-                timer--;
-                timerText.textContent = `${timer}`;
-
-                if (timer === 0) {
-                    clearInterval(timerInterval);
-                    timerActive = false;
-                    takePhoto();
-                    timerIcon.className = 'fas fa-clock';
-                    timerText.textContent = "10s";
-                    timerText.style.display = 'none';
-                }
-            }, 1000);
-        }
-    });
 
     async function startCamera() {
         try {
@@ -303,25 +236,6 @@
         }
     }
 
-    function switchCamera() {
-        if (!cameraActive) return;
-        facingMode = facingMode === 'user' ? 'environment' : 'user';
-        stopCamera();
-        startCamera();
-    }
-
-    function debounce(func, delay) {
-        let timeoutId;
-        return function (...args) {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
-    }
-
-    const debouncedSwitchCamera = debounce(switchCamera, 500);
-
     async function takePhoto() {
         let shutter = document.getElementById("shutterOverlay");
         shutter.style.opacity = "1";
@@ -361,19 +275,11 @@
     }
 
     function processCanvas() {
-        originalImageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-        if (isGrayscale) {
-            applyGrayscale();
-        }
-
         canvas.style.display = "block";
         video.style.display = "none";
         document.getElementById("captureButton").style.display = "none";
-        document.getElementById("cameraSwitchButton").style.display = "none";
         document.getElementById("downloadButton").style.display = "inline-block";
         document.getElementById("newPhotoButton").style.display = "inline-block";
-        document.getElementById("timerButton").style.display = "none";
         document.getElementById("shutterOverlay").style.opacity = "0";
     }
 
@@ -405,39 +311,7 @@
         video.style.display = 'block';
         document.getElementById('downloadButton').style.display = 'none';
         document.getElementById('newPhotoButton').style.display = 'none';
-        document.getElementById('cameraSwitchButton').style.display = 'inline-block';
         document.getElementById('captureButton').style.display = 'inline-block';
-        document.getElementById("timerButton").style.display = "inline-block";
-    }
-
-    let isGrayscale = false;
-    let originalImageData = null;
-
-    function toggleFilter() {
-        isGrayscale = !isGrayscale;
-        video.classList.toggle('grayscale', isGrayscale);
-
-        if (canvas.style.display === 'block') {
-            if (isGrayscale) {
-                applyGrayscale();
-            } else {
-                if (originalImageData) {
-                    context.putImageData(originalImageData, 0, 0);
-                }
-            }
-        }
-    }
-
-    function applyGrayscale() {
-        let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        let data = imageData.data;
-
-        for (let i = 0; i < data.length; i += 4) {
-            let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            data[i] = data[i + 1] = data[i + 2] = avg;
-        }
-
-        context.putImageData(imageData, 0, 0);
     }
 
     window.onload = function () {
