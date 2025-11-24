@@ -1,17 +1,18 @@
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera</title>
+    <title>Camera com Corte Ajustado</title>
     <link rel="icon" href="https://archive.org/download/FingerSnapLogo_201602/FingerSnapLogo.jpg">
     <link href="https://fonts.googleapis.com/css?family=Schoolbell&v1" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="icon" type="image/png" href="https://github.com/Armandodecampos/camera/blob/main/favicon.png?raw=true">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body {
             background: #ddd;
             padding: 1%;
+            margin: 0;
+            overflow: hidden;
         }
 
         @media (orientation: landscape) {
@@ -37,14 +38,17 @@
             overflow: hidden;
         }
 
+        /* IMPORTANTE: Estas dimensões são EXATAMENTE as do arquivo 2.txt.
+           Isso garante que o visual na tela seja idêntico.
+        */
         #video, #canvas {
             width: 90%;
             height: auto;
-            object-fit: cover;
-            aspect-ratio: 3 / 4;
+            object-fit: cover; /* Preenche a caixa */
+            aspect-ratio: 3 / 4; /* Proporção visual da caixa */
             border: 2px solid #fff;
-            max-width: 300px;
-            max-height: 400px;
+            max-width: 300px; /* Limite de largura do arquivo 2 */
+            max-height: 400px; /* Limite de altura do arquivo 2 */
         }
 
         #canvas {
@@ -54,47 +58,32 @@
 
         .btn-container {
             position: fixed;
-            bottom: 50px;
+            bottom: 50px; /* Ajustado para posição similar */
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
-            z-index: 2;
-        }
-
-        .camera-toggle {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: white;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: 50%;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-            z-index: 2;
-            border: 2px solid #000;
+            gap: 20px;
+            z-index: 20;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
         }
 
         .btncamera {
-            background: #fff;
-            color: #000;
             border: none;
-            font-size: 24px;
             cursor: pointer;
-            width: 70px;
-            height: 70px;
-            padding: 20px;
             border-radius: 50%;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
             z-index: 2;
-            border: 2px solid #000;
-            font-size: 20px;
+            border: 2px solid #000; /* Borda preta para contraste similar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
         }
-
-        .grayscale {
-            filter: grayscale(100%);
+        
+        .btncamera:active {
+            transform: scale(0.95);
         }
 
         button, .btncamera {
@@ -113,6 +102,20 @@
             align-items: center;
             z-index: 1000;
         }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
         #successIcon {
             display: none;
@@ -120,13 +123,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 100px;
+            font-size: 80px;
             color: #28a745;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
             border-radius: 50%;
-            z-index: 1000;
+            z-index: 3000;
             text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         @keyframes shutterEffect {
@@ -160,24 +164,193 @@
 </div>
 
 <div class="camera-container" id="cameraContainer">
-    <video id="video" autoplay></video>
-    <canvas id="canvas" width="300" height="400"></canvas>
+    <!-- Playsinline é importante para iOS não forçar tela cheia -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    
     <div class="btn-container">
-        <button class="btncamera" style="background:#222;color:#fff;" id="newPhotoButton" style="display: none;">
+        <!-- Botão Deletar (Vermelho) -->
+        <button class="btncamera" style="background:#d32f2f; color:#fff; width:70px; height:70px; font-size:25px; display: none;" id="newPhotoButton" onclick="newPhoto()">
             <i class="fas fa-trash-alt"></i>
         </button>
-        <button class="btncamera" style="background:#fff;color:#000;width:80px;height:80px;font-size:25px;bottom:100px;" id="captureButton">
+        
+        <!-- Botão Capturar (Branco) -->
+        <button class="btncamera" style="background:#fff; color:#000; width:90px; height:90px; font-size:35px;" id="captureButton" onclick="takePhoto()">
             <i class="fas fa-camera"></i>
         </button>
-        <button class="btncamera" style="background:#fff;color:#000;width:80px;height:80px;font-size:25px;bottom:100px;display: none;" id="downloadButton">
+        
+        <!-- Botão Download (Verde) -->
+        <button class="btncamera" style="background:#2e7d32; color:#fff; width:70px; height:70px; font-size:25px; display: none;" id="downloadButton" onclick="downloadPhoto()">
             <i class="fas fa-download"></i>
         </button>
     </div>
 </div>
+
 <div id="successIcon">
-    <i class="fas fa-check-circle"></i>
+    <i class="fas fa-check"></i>
 </div>
 <div id="shutterOverlay"></div>
-<script src="script.js"></script>
+
+<script>
+    window.addEventListener("load", function () {
+        document.getElementById("loader").style.display = "none";
+    });
+
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let context = canvas.getContext('2d');
+    let stream = null;
+    let cameraActive = false;
+
+    // Inicializa a câmera
+    async function startCamera() {
+        try {
+            const constraints = {
+                video: {
+                    facingMode: 'environment', 
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 30 },
+                    focusMode: { ideal: 'continuous' },
+                    exposureMode: { ideal: 'auto' }
+                }
+            };
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+
+            video.onloadedmetadata = () => {
+                // Ajusta apenas a resolução do canvas interno, o visual é controlado pelo CSS
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                cameraActive = true;
+            };
+        } catch (error) {
+            console.error('Erro ao acessar a câmera:', error);
+            
+            try {
+                 // Fallback
+                 stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                 });
+                 video.srcObject = stream;
+            } catch (e) {
+                console.error("Fallback falhou", e);
+                alert("Erro ao iniciar câmera. Verifique permissões.");
+            }
+        }
+    }
+
+    // Tira a foto
+    async function takePhoto() {
+        let shutter = document.getElementById("shutterOverlay");
+        shutter.style.animation = 'none';
+        shutter.offsetHeight; 
+        shutter.style.animation = "shutterEffect 0.3s ease-in-out";
+
+        try {
+            if ('ImageCapture' in window && stream) {
+                const track = stream.getVideoTracks()[0];
+                const imageCapture = new ImageCapture(track);
+                
+                try {
+                    const blob = await imageCapture.takePhoto();
+                    const imageUrl = URL.createObjectURL(blob);
+                    const img = new Image();
+                    img.onload = () => {
+                        cropAndDraw(img);
+                        URL.revokeObjectURL(imageUrl);
+                    };
+                    img.src = imageUrl;
+                } catch (e) {
+                    cropAndDraw(video);
+                }
+            } else {
+                cropAndDraw(video);
+            }
+        } catch (error) {
+            console.error('Erro ao tirar foto:', error);
+            cropAndDraw(video);
+        }
+    }
+
+    // LÓGICA DE CORTE EXATA DO ARQUIVO 2.TXT
+    function cropAndDraw(source) {
+        let width = source.videoWidth || source.width;
+        let height = source.videoHeight || source.height;
+        
+        // Proporção exata definida no arquivo 2
+        let targetAspectRatio = 120 / 141; 
+        
+        let newWidth, newHeight, xOffset, yOffset;
+
+        if (width / height > targetAspectRatio) {
+            newHeight = height;
+            newWidth = height * targetAspectRatio;
+            xOffset = (width - newWidth) / 2;
+            yOffset = 0;
+        } else {
+            newWidth = width;
+            newHeight = width / targetAspectRatio;
+            xOffset = 0;
+            yOffset = (height - newHeight) / 2;
+        }
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        
+        context.drawImage(source, xOffset, yOffset, newWidth, newHeight, 0, 0, newWidth, newHeight);
+        
+        processCanvas();
+    }
+
+    function processCanvas() {
+        canvas.style.display = "block";
+        video.style.display = "none";
+        document.getElementById("captureButton").style.display = "none";
+        document.getElementById("downloadButton").style.display = "flex";
+        document.getElementById("newPhotoButton").style.display = "flex";
+    }
+
+    function generateRandomFilename() {
+        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let filename = 'foto_';
+        for (let i = 0; i < 16; i++) {
+            filename += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return filename + '.png';
+    }
+
+    function downloadPhoto() {
+        let link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = generateRandomFilename();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        document.getElementById("successIcon").style.display = "block";
+
+        setTimeout(() => {
+            document.getElementById("successIcon").style.display = "none";
+            newPhoto();
+        }, 1000);
+    }
+
+    function newPhoto() {
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+        document.getElementById('downloadButton').style.display = 'none';
+        document.getElementById('newPhotoButton').style.display = 'none';
+        document.getElementById('captureButton').style.display = 'flex';
+    }
+
+    window.onload = function () {
+        startCamera();
+    };
+
+</script>
 </body>
 </html>
